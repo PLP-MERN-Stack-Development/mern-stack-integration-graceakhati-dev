@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Server uploads (optional - comment out if you want to track uploads)
+# server/uploads/
+
+# Client build
+client/dist/
+client/build/
+
+# Duplicate folder (to be deleted)
+mern-blog/
+

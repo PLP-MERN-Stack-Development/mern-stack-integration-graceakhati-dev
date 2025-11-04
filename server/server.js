@@ -1,78 +1,67 @@
-// server.js - Main server file for the MERN blog application
-
-// Import required modules
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Import routes
-const postRoutes = require('./routes/posts');
-const categoryRoutes = require('./routes/categories');
-const authRoutes = require('./routes/auth');
-
-// Load environment variables
 dotenv.config();
 
-// Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// CORS configuration - allow requests from Vite dev server
+app.use(cors({
+  origin: [
+    'http://localhost:5173', 
+    'http://localhost:5174', 
+    'http://localhost:3000',
+    'http://localhost:5175'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Body parsing middleware - must be before routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files
+// Routes
+const authRoutes = require('./routes/authRoutes');
+const postRoutes = require('./routes/postRoutes');
+const commentRoutes = require('./routes/commentRoutes');
+app.use('/api/auth', authRoutes);
+app.use('/api/posts', postRoutes);
+app.use('/api/comments', commentRoutes);
+
+// Static: serve uploads folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Log requests in development mode
-if (process.env.NODE_ENV === 'development') {
-  app.use((req, res, next) => {
-    console.log(`${req.method} ${req.url}`);
-    next();
-  });
+// Test route
+app.get('/', (req, res) => {
+  res.send('Her Blog API is running');
+});
+
+// Error handling middleware (must be last, after all routes)
+const errorHandler = require('./middleware/errorHandler');
+app.use(errorHandler);
+
+// MongoDB connection
+const mongoUri = process.env.MONGODB_URI;
+if (!mongoUri) {
+  console.error('Missing MONGODB_URI in environment variables');
+  process.exit(1);
 }
 
-// API routes
-app.use('/api/posts', postRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/auth', authRoutes);
-
-// Root route
-app.get('/', (req, res) => {
-  res.send('MERN Blog API is running');
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.statusCode || 500).json({
-    success: false,
-    error: err.message || 'Server Error',
-  });
-});
-
-// Connect to MongoDB and start server
 mongoose
-  .connect(process.env.MONGODB_URI)
+  .connect(mongoUri)
   .then(() => {
-    console.log('Connected to MongoDB');
+    console.log('MongoDB connected');
+    const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+      console.log(`Her Blog server running on port ${PORT}`);
     });
   })
   .catch((err) => {
-    console.error('Failed to connect to MongoDB', err);
+    console.error('MongoDB connection error:', err);
     process.exit(1);
   });
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Promise Rejection:', err);
-  // Close server & exit process
-  process.exit(1);
-});
-
-module.exports = app; 
